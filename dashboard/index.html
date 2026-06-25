@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cliper Outreach CRM</title>
+    <!-- Google Font Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- HEADER -->
+        <header class="header">
+            <div class="logo-area">
+                <div class="logo-icon"><i data-lucide="zap"></i></div>
+                <div class="logo-text">
+                    <h1>CLIPER</h1>
+                    <span>Outreach CRM & Planner</span>
+                </div>
+            </div>
+            
+            <div class="metrics-container">
+                <div class="metric-card">
+                    <span class="metric-label">Total Leads</span>
+                    <span id="metric-total" class="metric-value">-</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">Contacted</span>
+                    <span id="metric-contacted" class="metric-value text-accent-cyan">-</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">Pending</span>
+                    <span id="metric-pending" class="metric-value text-accent-purple">-</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">Conversion</span>
+                    <span id="metric-rate" class="metric-value">-</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-layout">
+            <!-- SIDEBAR -->
+            <aside class="sidebar">
+                <div class="app-tabs">
+                    <button class="tab-btn active" id="tab-crm-btn"><i data-lucide="users"></i> CRM</button>
+                    <button class="tab-btn" id="tab-clipper-btn"><i data-lucide="video"></i> Clipper</button>
+                    <button class="tab-btn" id="tab-scout-btn"><i data-lucide="radar"></i> Scout</button>
+                </div>
+                
+                <!-- CRM SIDEBAR CONTENT -->
+                <div id="crm-sidebar" class="sidebar-content active">
+                    <div class="sidebar-header">
+                        <h2>Target Queue</h2>
+                        <div class="search-bar">
+                            <i data-lucide="search"></i>
+                            <input type="text" id="search-input" placeholder="Search creators...">
+                        </div>
+                        <div class="filter-sort-controls" style="display: flex; gap: 8px; margin-top: 10px;">
+                            <select id="filter-select" style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); padding: 6px; border-radius: 4px; font-size: 12px;">
+                                <option value="all">All Statuses</option>
+                                <option value="pending">Pending</option>
+                                <option value="contacted">Contacted</option>
+                                <option value="followup">Follow-Up Due</option>
+                            </select>
+                            <select id="sort-select" style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); padding: 6px; border-radius: 4px; font-size: 12px;">
+                                <option value="alpha">A-Z</option>
+                                <option value="alpha-desc">Z-A</option>
+                                <option value="newest">Newest Added</option>
+                                <option value="oldest">Oldest Added</option>
+                                <option value="followup">Follow-Up Date</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="leads-list" id="leads-list">
+                        <div class="lead-loading">Loading creators list...</div>
+                    </div>
+                </div>
+
+                <!-- CLIPPER SIDEBAR CONTENT -->
+                <div id="clipper-sidebar" class="sidebar-content hidden">
+                    <div class="sidebar-header">
+                        <h2>Clipping Engine</h2>
+                        <p class="text-muted" style="font-size: 12px; margin-bottom: 10px;">Run the automated video pipeline</p>
+                        
+                        <div class="input-group">
+                            <label>YouTube URL</label>
+                            <input type="text" id="clipper-url" placeholder="https://youtube.com/watch?v=...">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>Profile</label>
+                            <select id="clipper-profile">
+                                <option>Loading...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>Platform</label>
+                            <select id="clipper-platform">
+                                <option value="tiktok">tiktok</option>
+                                <option value="shorts">shorts</option>
+                                <option value="reels">reels</option>
+                            </select>
+                        </div>
+                        
+                        <button id="clipper-analyze-btn" class="btn btn-primary" style="width: 100%; margin-top: 15px; height: 44px; font-size: 15px;">
+                            <i data-lucide="search"></i> Find Viral Hooks
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SCOUT SIDEBAR CONTENT -->
+                <div id="scout-sidebar" class="sidebar-content hidden">
+                    <div class="sidebar-header">
+                        <h2>Viral Scout</h2>
+                        <p class="text-muted" style="font-size: 12px; margin-bottom: 10px;">Find top competitor shorts</p>
+                        
+                        <div class="input-group" style="margin-bottom: 15px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">    <label style="margin-bottom: 8px; display: block; color: var(--text-muted);">Scout Mode</label>
+                            <div style="display: flex; gap: 15px;">
+                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: white; font-size: 13px;">
+                                    <input type="radio" name="scout-mode" value="channel" checked> Specific Channel
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: white; font-size: 13px;">
+                                    <input type="radio" name="scout-mode" value="search"> Discover Niche
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label id="scout-input-label">Competitor Channel URL</label>
+                            <input type="text" id="scout-url" placeholder="https://youtube.com/@mkbhd">
+                        </div>
+                        
+                        <button id="scout-run-btn" class="btn btn-primary" style="width: 100%; margin-top: 15px; height: 44px; font-size: 15px;">
+                            <i data-lucide="search"></i> Search
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- MAIN CONTENT -->
+            <main class="content-area">
+                <!-- CRM VIEWS -->
+                <div id="crm-main-view">
+                <div id="welcome-view" class="welcome-view">
+                    <div class="welcome-card">
+                        <i data-lucide="layers" class="welcome-icon"></i>
+                        <h2>Select a Creator to Start Planning</h2>
+                        <p>Choose a target from the sidebar to view their verified contact information, track progress, and generate AI-driven outreach strategies.</p>
+                    </div>
+                </div>
+
+                <div id="details-view" class="details-view hidden">
+                    <!-- TOP PROFILE CARD -->
+                    <div class="glass-card profile-card">
+                        <div class="profile-header">
+                            <div>
+                                <h2 id="creator-channel-name">Creator Name</h2>
+                                <p id="creator-profile-id" class="creator-badge">@handle</p>
+                            </div>
+                            <div class="contact-status-toggle">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="contacted-checkbox">
+                                    <span class="checkmark"></span>
+                                    Mark as Contacted
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="profile-links">
+                            <a id="video-link" href="#" target="_blank" class="btn-link"><i data-lucide="youtube"></i> Watch Prospect Video</a>
+                            <a id="channel-link" href="#" target="_blank" class="btn-link"><i data-lucide="external-link"></i> Channel Home</a>
+                        </div>
+                    </div>
+
+                    <!-- TWO COLUMN DETAILS -->
+                    <div class="details-grid">
+                        <!-- COLUMN 1: CONTACT DATA -->
+                        <div class="glass-card contact-card">
+                            <h3><i data-lucide="mail"></i> Contact Channels</h3>
+                            
+                            <div class="contact-section">
+                                <span class="section-title">Best Way to Reach</span>
+                                <div class="best-reach-box">
+                                    <span id="best-reach-method"><i data-lucide="help-circle"></i> Analyzing...</span>
+                                    <span id="best-reach-score" class="score-badge">--%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="contact-section">
+                                <span class="section-title">Verified Emails</span>
+                                <div id="emails-container" class="contact-items">
+                                    <!-- Dynamic Emails -->
+                                </div>
+                            </div>
+
+                            <div class="contact-section">
+                                <span class="section-title">Social Direct Reach</span>
+                                <div id="socials-container" class="contact-items flex-row">
+                                    <!-- Dynamic Social Handles -->
+                                </div>
+                            </div>
+
+                            <div class="contact-section">
+                                <span class="section-title">Websites & Links</span>
+                                <div id="websites-container" class="contact-items scroll-y">
+                                    <!-- Dynamic Websites -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- COLUMN 2: TRACKING & NOTES -->
+                        <div class="glass-card tracking-card">
+                            <h3><i data-lucide="edit-3"></i> Outreach Tracking</h3>
+                            
+                            <div class="input-group">
+                                <label for="outreach-channel-select">Reach Channel Used</label>
+                                <select id="outreach-channel-select">
+                                    <option value="">-- Select Channel --</option>
+                                    <option value="Instagram DM">Instagram DM</option>
+                                    <option value="LinkedIn Message">LinkedIn Message</option>
+                                    <option value="Twitter DM">Twitter DM</option>
+                                    <option value="Email">Email</option>
+                                    <option value="Website Form">Website Form</option>
+                                </select>
+                            </div>
+
+                            <div class="input-group">
+                                <label for="contact-notes">Internal Notes</label>
+                                <textarea id="contact-notes" placeholder="E.g., Sent DM with clip sample. Awaiting reply."></textarea>
+                            </div>
+
+                            <div class="tracking-footer">
+                                <span id="save-status" class="save-status">Saved</span>
+                                <button id="save-tracker-btn" class="btn btn-primary">Save Notes</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GATEKEEPER PLAYBOOK -->
+                    <div class="glass-card ai-planner-card">
+                        <div class="planner-header">
+                            <div>
+                                <h3 style="color: var(--accent-cyan);"><i data-lucide="briefcase"></i> Gatekeeper Playbook</h3>
+                                <p>Execute the 4-step 'Proof of Work' strategy to convert high-profile targets.</p>
+                            </div>
+                        </div>
+
+                        <!-- Step 1 -->
+                        <div class="playbook-step" style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 3px solid var(--accent-purple);">
+                            <h4>1. Free Sample</h4>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">Package 2-3 polished clips using your local AI models.</p>
+                            <input type="text" id="sample-link" placeholder="Paste Google Drive or Frame.io link..." style="width: 100%; margin-bottom: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 8px; border-radius: 4px;">
+                            <button class="btn btn-outline" style="width: 100%; font-size: 12px;" onclick="alert('Sample link saved to tracker!')"><i data-lucide="save"></i> Save Link to CRM</button>
+                        </div>
+
+                        <!-- Step 2 -->
+                        <div class="playbook-step" style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 3px solid var(--accent-cyan);">
+                            <h4>2. Locate Gatekeeper</h4>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">Bypass the main inbox. Search LinkedIn for the Lead Editor or Content Manager.</p>
+                            <button id="gatekeeper-search-btn" class="btn btn-primary" style="width: 100%; font-size: 12px;" onclick="window.findGatekeeper()"><i data-lucide="search"></i> Hunt Gatekeeper on LinkedIn</button>
+                            <div id="gatekeeper-results" class="hidden" style="margin-top: 10px; font-size: 12px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px;"></div>
+                        </div>
+
+                        <!-- Step 3 -->
+                        <div class="playbook-step" style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 3px solid var(--accent-green);">
+                            <h4>3. Frictionless Pitch</h4>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">Generate an ultra-brief email template with your Free Sample link.</p>
+                            <button id="generate-strategy-btn" class="btn btn-outline" style="width: 100%; font-size: 12px;"><i data-lucide="pen-tool"></i> Generate Short Pitch</button>
+                            <div id="ai-loading" class="ai-loading-container hidden" style="margin-top: 15px;">
+                                <div class="spinner"></div>
+                                <span>Drafting frictionless pitch...</span>
+                            </div>
+                            <div id="ai-result" class="ai-result hidden" style="margin-top: 15px;">
+                                <div class="strategy-block">
+                                    <div class="pitch-header">
+                                        <span class="block-title">Frictionless Script</span>
+                                        <div style="display: flex; gap: 8px;">
+                                            <button id="copy-script-btn" class="btn btn-sm btn-icon" title="Copy script"><i data-lucide="copy"></i> Copy Script</button>
+                                        </div>
+                                    </div>
+                                    <pre id="ai-pitch-script" class="pitch-pre">Pitch script here...</pre>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 4 -->
+                        <div class="playbook-step" style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 3px solid var(--accent-red);">
+                            <h4>4. The 72-Hour Follow-Up</h4>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">If no reply, float the email to the top of their inbox in 3 days.</p>
+                            <button class="btn btn-outline" style="width: 100%; font-size: 12px;" onclick="window.setFollowUp(72)"><i data-lucide="clock"></i> Set 3-Day Reminder</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
+                
+                <!-- CLIPPER CONSOLE VIEW -->
+                <div id="clipper-main-view" class="hidden" style="height: 100%; display: flex; flex-direction: column; padding: 24px; overflow-y: auto;">
+                    <!-- HOOKS SECTION -->
+                    <div id="clipper-hooks-container" class="hidden" style="margin-bottom: 24px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h2 style="font-size: 24px; margin: 0;"><i data-lucide="scissors" class="text-accent-cyan"></i> AI Viral Hooks Found</h2>
+                            <button id="batch-render-btn" class="btn btn-primary" style="font-size: 14px;"><i data-lucide="layers"></i> Batch Render Selected</button>
+                        </div>
+                        <div id="hooks-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                            <!-- Hook Cards injected here -->
+                        </div>
+                    </div>
+                    
+                    <div id="retention-manager-card" class="glass-card" style="margin-bottom: 24px; padding: 20px;">
+                        <h3 style="color: var(--accent-cyan); margin-bottom: 10px; font-size: 18px;"><i data-lucide="download-cloud"></i> Background Video Downloader</h3>
+                        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Paste a YouTube URL of satisfying or gameplay footage to automatically download and categorize it for split-screen clips. It will be randomly picked when you render.</p>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="retention-url" class="input-field" placeholder="YouTube URL (e.g. GTA V Mega Ramp compilation)" style="flex: 1;">
+                            <select id="retention-cat" class="input-field" style="width: 200px;">
+                                <option value="high_stimulus">High Stimulus (Gaming)</option>
+                                <option value="asmr">Oddly Satisfying (ASMR)</option>
+                                <option value="premium">Premium Cinematic (3D)</option>
+                            </select>
+                            <button id="download-retention-btn" class="btn btn-primary">Download Video</button>
+                        </div>
+                        <div id="retention-download-status" style="font-size: 12px; margin-top: 10px; color: var(--accent-cyan); display: none;">Download started! Watch the console below for progress.</div>
+                    </div>
+
+                    <div class="console-header" style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            <h2><i data-lucide="terminal" class="text-accent-cyan"></i> Pipeline Console</h2>
+                            <div class="console-status" id="console-status">Status: Idle</div>
+                        </div>
+                        <div id="render-progress-container" style="display: none; width: 100%; background: #2a2a2a; border-radius: 8px; overflow: hidden; height: 8px;">
+                            <div id="render-progress-bar" style="width: 0%; height: 100%; background: var(--accent-cyan); transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                    <div class="console-window" id="console-window" style="flex: 1; min-height: 200px;">
+                        <!-- Logs injected here -->
+                    </div>
+                </div>
+
+                <!-- SCOUT MAIN VIEW -->
+                <div id="scout-main-view" class="hidden" style="height: 100%; padding: 24px; overflow-y: auto;">
+                    <div class="header-section" style="margin-bottom: 24px;">
+                        <h2 style="font-size: 24px; display: flex; align-items: center; gap: 10px;">
+                            <i data-lucide="trending-up" class="text-accent-cyan"></i> Top Viral Shorts
+                        </h2>
+                        <p class="text-muted" style="margin-top: 5px;">Ranked by highest view count.</p>
+                    </div>
+                    
+                    <div id="scout-loading" class="hidden" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                        <i data-lucide="loader" style="animation: spin 2s linear infinite;"></i> Scanning channel...
+                    </div>
+                    
+                    <div id="scout-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+                        <!-- Shorts injected here -->
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Frontend logic script -->
+    <script src="app.js?v=22"></script>
+</body>
+</html>

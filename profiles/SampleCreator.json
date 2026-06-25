@@ -1,0 +1,10 @@
+{
+    "name": "SampleCreator",
+    "clip_duration_min": 30,
+    "clip_duration_max": 60,
+    "style_notes": "Fast-paced vlog style, highly dynamic.",
+    "analysis_instruction": "Find the highest energy moments where the creator makes a bold claim.",
+    "hook_priority": ["shock_moment", "educational"],
+    "emotion_titles": { "Shock": "CRAZY STORY" },
+    "crop_strategy": "split_screen"
+}
