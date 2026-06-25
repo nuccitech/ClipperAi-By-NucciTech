@@ -62,7 +62,7 @@ def _smart_boundaries(segments, gpt_start, gpt_end, dur_min, dur_max):
     return snapped_start, best_end
 
 
-def run_automated_factory(target_input, profile_name="default", platform="tiktok"):
+def run_automated_factory(target_input, profile_name="default", platform="tiktok", max_clips=None):
     print(f"==================================================")
     print(f"STARTING AUTOMATED PIPELINE (Profile: {profile_name} | Platform: {platform})")
     print(f"==================================================\n")
@@ -170,8 +170,8 @@ def run_automated_factory(target_input, profile_name="default", platform="tiktok
     exported_clips = []  # (filename, clip_dict, title_text) for report
 
     for i, clip in enumerate(clips, 1):
-        if len(exported) >= 1:
-            print("\nTest mode: only exporting 1 clip for testing purposes.")
+        if max_clips is not None and len(exported) >= max_clips:
+            print(f"\nMax clips reached ({max_clips}). Stopping export.")
             break
             
         score = clip.get('score', 0)

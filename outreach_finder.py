@@ -4,7 +4,10 @@ import json
 import concurrent.futures
 from urllib.parse import urlparse
 import yt_dlp
-from batch_run import QUEUE
+try:
+    from batch_run import QUEUE
+except ImportError:
+    QUEUE = []
 
 OUTPUT_FILE = "outreach_contacts.json"
 MARKDOWN_REPORT = "outreach_contacts.md"

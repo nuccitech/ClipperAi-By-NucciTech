@@ -45,8 +45,6 @@ Level 3 — Deep Value (Educational, Philosophical, Vulnerable)
 """
 
 
-import boto3
-
 def find_viral_hooks(transcript_text, profile_name="default", platform="tiktok", platform_max_duration=None):
     if not transcript_text:
         print("\nERROR: The transcript provided is empty.")
@@ -161,7 +159,7 @@ Return ONLY valid JSON. Do not use markdown blocks like ```json.
         hook_data = json.loads(result_string)
 
         clips = hook_data.get("clips", [])
-        print(f"SUCCESS! AWS AI found {len(clips)} clip(s):")
+        print(f"SUCCESS! OpenRouter AI found {len(clips)} clip(s):")
         for i, clip in enumerate(clips, 1):
             duration = clip['end'] - clip['start']
             print(f"  Clip {i}: {clip['start']}s–{clip['end']}s ({duration:.1f}s) | "

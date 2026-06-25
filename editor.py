@@ -139,7 +139,13 @@ def _make_title_clip(text, clip_width, duration, font_path=None, font_size=55,
 def _make_subtitle_clip(text, clip_width, duration, font_path=None, font_size=40,
                         text_color=(255, 255, 0), stroke_color=(0, 0, 0), y_offset=800):
     if not font_path:
-        for path in ['C:/Windows/Fonts/arialbd.ttf', 'C:/Windows/Fonts/arial.ttf']:
+        font_paths = [
+            'C:/Windows/Fonts/arialbd.ttf', 'C:/Windows/Fonts/arial.ttf',
+            '/Library/Fonts/Arial.ttf', '/Library/Fonts/Arial Bold.ttf',
+            '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
+        ]
+        for path in font_paths:
             try:
                 ImageFont.truetype(path, 10)
                 font_path = path

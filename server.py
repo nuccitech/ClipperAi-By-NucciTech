@@ -22,10 +22,9 @@ except ImportError:
     scan_channel_for_shorts = None
     PLATFORMS = {"tiktok": {}}
 
-load_dotenv()
-
 log_queue = queue.Queue()
 pipeline_running = False
+_pipeline_lock = threading.Lock()
 
 class _QueueStream:
     def __init__(self, q):
@@ -103,8 +102,6 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             self.handle_post_pipeline_render(data)
         elif self.path == "/api/pipeline/batch_render":
             self.handle_post_pipeline_batch_render(data)
-        elif self.path == "/api/retention/download":
-            self.handle_post_retention_download(data)
         else:
             self._set_headers(status=404)
             self.wfile.write(json.dumps({"error": "Not Found"}).encode('utf-8'))
@@ -112,8 +109,9 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
     def handle_post_pipeline_batch_render(self, data):
         def _run_batch():
             global pipeline_running
-            if pipeline_running: return
-            pipeline_running = True
+            with _pipeline_lock:
+                if pipeline_running: return
+                pipeline_running = True
             old_stdout = sys.stdout
             sys.stdout = _QueueStream(log_queue)
             try:
@@ -123,35 +121,15 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
                 print(f"Pipeline batch error: {e}")
             finally:
                 sys.stdout = old_stdout
-                pipeline_running = False
+                with _pipeline_lock:
+                    pipeline_running = False
 
         import threading
         threading.Thread(target=_run_batch, daemon=True).start()
         self._set_headers()
         self.wfile.write(json.dumps({"success": True, "message": "Batch pipeline started"}).encode('utf-8'))
 
-    def handle_post_retention_download(self, data):
-        url = data.get("url")
-        category = data.get("category", "high_stimulus")
-        if not url:
-            self._set_headers(status=400)
-            self.wfile.write(json.dumps({"error": "Missing URL"}).encode('utf-8'))
-            return
-            
-        def _run_download():
-            import subprocess
-            try:
-                print(f"[Retention Downloader] Starting download for {url} into {category}")
-                subprocess.run(["python", "scrape_retention.py", url, "--category", category], check=True)
-                print("[Retention Downloader] Download complete!")
-            except Exception as e:
-                print(f"[Retention Downloader] Failed: {e}")
-                
-        import threading
-        threading.Thread(target=_run_download, daemon=True).start()
-        
-        self._set_headers()
-        self.wfile.write(json.dumps({"success": True, "message": "Download started in background"}).encode('utf-8'))
+
 
     def handle_post_update_profile(self, data):
         profile = data.get("profile")
@@ -185,8 +163,9 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             
         def _run_analyze():
             global pipeline_running
-            if pipeline_running: return
-            pipeline_running = True
+            with _pipeline_lock:
+                if pipeline_running: return
+                pipeline_running = True
             
             # Redirect stdout to logs temporarily
             old_stdout = sys.stdout
@@ -205,7 +184,8 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             finally:
                 sys.stdout = old_stdout
                 sys.stderr = old_stderr
-                pipeline_running = False
+                with _pipeline_lock:
+                    pipeline_running = False
 
         threading.Thread(target=_run_analyze).start()
         self._set_headers()
@@ -226,8 +206,9 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             
         def _run_render():
             global pipeline_running
-            if pipeline_running: return
-            pipeline_running = True
+            with _pipeline_lock:
+                if pipeline_running: return
+                pipeline_running = True
             
             old_stdout = sys.stdout
             old_stderr = sys.stderr
@@ -246,7 +227,8 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             finally:
                 sys.stdout = old_stdout
                 sys.stderr = old_stderr
-                pipeline_running = False
+                with _pipeline_lock:
+                    pipeline_running = False
 
         threading.Thread(target=_run_render).start()
         self._set_headers()
@@ -316,12 +298,12 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"error": "Missing URL"}).encode('utf-8'))
             return
 
-        if pipeline_running:
-            self._set_headers(status=400)
-            self.wfile.write(json.dumps({"error": "Pipeline already running"}).encode('utf-8'))
-            return
-
-        pipeline_running = True
+        with _pipeline_lock:
+            if pipeline_running:
+                self._set_headers(status=400)
+                self.wfile.write(json.dumps({"error": "Pipeline already running"}).encode('utf-8'))
+                return
+            pipeline_running = True
         log_queue.put(f"\n{'='*50}\nStarting pipeline for {url}\nProfile: {profile} | Platform: {platform}\n\n")
 
         def worker():
@@ -337,7 +319,8 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
                 print(f"\nFATAL ERROR: {e}\n")
             finally:
                 sys.stdout = old_stdout
-                pipeline_running = False
+                with _pipeline_lock:
+                    pipeline_running = False
                 log_queue.put("\n--- Pipeline Finished ---\n")
 
         t = threading.Thread(target=worker, daemon=True)
@@ -356,12 +339,12 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"error": "Missing short_url or source_url"}).encode('utf-8'))
             return
 
-        if pipeline_running:
-            self._set_headers(status=400)
-            self.wfile.write(json.dumps({"error": "Pipeline already running"}).encode('utf-8'))
-            return
-
-        pipeline_running = True
+        with _pipeline_lock:
+            if pipeline_running:
+                self._set_headers(status=400)
+                self.wfile.write(json.dumps({"error": "Pipeline already running"}).encode('utf-8'))
+                return
+            pipeline_running = True
         log_queue.put(f"\n{'='*50}\nStarting Clone & Train Pipeline...\nViral Short: {short_url}\nSource Podcast: {source_url}\n\n")
 
         def worker():
@@ -394,7 +377,8 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             finally:
                 sys.stdout = old_stdout
                 sys.stderr = sys.__stderr__
-                pipeline_running = False
+                with _pipeline_lock:
+                    pipeline_running = False
 
         threading.Thread(target=worker, daemon=True).start()
         self._set_headers()
@@ -543,7 +527,9 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             client = boto3.client("bedrock-runtime", region_name="us-east-1")
             
             # The custom model ARN provided by the user
-            model_arn = "arn:aws:bedrock:us-east-1:045283512766:custom-model/amazon.nova-2-lite-v1:0:256k/ji7ke0be0bdu"
+            model_arn = os.getenv("BEDROCK_MODEL_ARN")
+            if not model_arn:
+                raise ValueError("Missing BEDROCK_MODEL_ARN in .env")
             
             # Create the prompt instructing the custom model
             prompt = f"Write a frictionless 3-sentence outreach pitch for the YouTube creator: {profile}. Mention that we generated 3 free polished shorts for them using our AI system and include a placeholder for a [Free Sample Link]. Keep it highly converting and brief."
