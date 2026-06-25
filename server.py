@@ -114,12 +114,15 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             global pipeline_running
             if pipeline_running: return
             pipeline_running = True
+            old_stdout = sys.stdout
+            sys.stdout = _QueueStream(log_queue)
             try:
                 import main
                 main.api_batch_render_clips(data)
             except Exception as e:
                 print(f"Pipeline batch error: {e}")
             finally:
+                sys.stdout = old_stdout
                 pipeline_running = False
 
         import threading

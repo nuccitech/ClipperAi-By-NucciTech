@@ -15,39 +15,52 @@ PLATFORMS = {
 
 
 def _detect_face_positions(video_path, start_time, end_time, fps):
-    """Sample one frame per second and return {clip_frame_idx: face_center_x}."""
+    """Sample frames using MediaPipe and return {clip_frame_idx: face_center_x}."""
+    import mediapipe as mp
     cap = cv2.VideoCapture(video_path)
-    cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-
+    
     sample_step = max(1, int(fps))
     frame_start = int(start_time * fps)
     frame_end = int(end_time * fps)
 
     positions = {}
     f = frame_start
-    while f <= frame_end:
-        cap.set(cv2.CAP_PROP_POS_FRAMES, f)
-        ret, frame = cap.read()
-        if not ret:
-            break
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(50, 50))
-        if len(faces) > 0:
-            largest = max(faces, key=lambda fc: fc[2] * fc[3])
-            x, y, w, h = largest
-            positions[f - frame_start] = x + w // 2
-        f += sample_step
+    
+    mp_face_detection = mp.solutions.face_detection
+    with mp_face_detection.FaceDetection(model_selection=1, min_detection_confidence=0.5) as face_detection:
+        while f <= frame_end:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, f)
+            ret, frame = cap.read()
+            if not ret: break
+            
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = face_detection.process(rgb_frame)
+            
+            if results.detections:
+                largest_area = 0
+                best_x = None
+                for detection in results.detections:
+                    bbox = detection.location_data.relative_bounding_box
+                    area = bbox.width * bbox.height
+                    if area > largest_area:
+                        largest_area = area
+                        best_x = int((bbox.xmin + bbox.width / 2) * frame.shape[1])
+                
+                if best_x is not None:
+                    positions[f - frame_start] = best_x
+            
+            f += sample_step
 
     cap.release()
     return positions
 
 
 def _build_crop_func(positions, clip_width, target_width, clip_fps, total_frames):
-    """Return a per-frame crop function with smoothed face tracking for clip.fl()."""
+    """Return a per-frame crop function with cinematic gimbal exponential smoothing."""
     center = clip_width // 2
     half = target_width // 2
 
-    # Fill gaps forward with last known position, defaulting to center
+    # Fill gaps forward with last known position
     filled = {}
     last = center
     for i in range(total_frames):
@@ -55,18 +68,22 @@ def _build_crop_func(positions, clip_width, target_width, clip_fps, total_frames
             last = int(positions[i])
         filled[i] = last
 
-    # 1-second moving average to remove jitter
-    window = max(1, int(clip_fps))
+    # Cinematic gimbal pan (Exponential Moving Average)
     smoothed = {}
+    current_x = float(filled.get(0, center))
+    
+    # The lower the smoothing factor, the heavier/slower the camera pans (0.05 at 30fps is very smooth)
+    smoothing_factor = 0.05
+    
     for i in range(total_frames):
-        s = max(0, i - window // 2)
-        e = min(total_frames - 1, i + window // 2)
-        smoothed[i] = int(sum(filled[j] for j in range(s, e + 1)) / (e - s + 1))
+        target_x = float(filled[i])
+        current_x += (target_x - current_x) * smoothing_factor
+        smoothed[i] = current_x
 
     def crop_frame(get_frame, t):
         frame = get_frame(t)
         idx = min(int(t * clip_fps), total_frames - 1)
-        cx = max(half, min(clip_width - half, smoothed.get(idx, center)))
+        cx = max(half, min(clip_width - half, int(smoothed.get(idx, center))))
         x1 = cx - half
         return frame[:, x1: x1 + target_width]
 

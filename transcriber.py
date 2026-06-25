@@ -13,7 +13,7 @@ def extract_audio(video_filepath, audio_filepath="temp_audio.mp3"):
     print(f"Extracting audio from {video_filepath}...")
     try:
         video = VideoFileClip(video_filepath)
-        video.audio.write_audiofile(audio_filepath, logger=None)
+        video.audio.write_audiofile(audio_filepath, bitrate="64k", logger=None)
         video.close()
         return audio_filepath
     except Exception as e:
@@ -48,31 +48,61 @@ def get_transcript(audio_filepath):
 
     print("\nSending audio to Groq Cloud (whisper-large-v3)...")
     try:
+        from moviepy.editor import AudioFileClip
+        import math
+        
         client = Groq(api_key=api_key)
         
-        with open(audio_filepath, "rb") as file:
-            transcription = client.audio.transcriptions.create(
-              file=(os.path.basename(audio_filepath), file.read()),
-              model="whisper-large-v3",
-              response_format="verbose_json"
-            )
-            
-        # The groq response is a pydantic model or dict. In python SDK, it returns an object.
-        # However, verbose_json provides `.segments` directly.
-        all_segments = []
-        if hasattr(transcription, "segments"):
-            for seg in transcription.segments:
-                all_segments.append(_Segment(
-                    start=seg.get("start") if isinstance(seg, dict) else seg.start,
-                    end=seg.get("end") if isinstance(seg, dict) else seg.end,
-                    text=seg.get("text") if isinstance(seg, dict) else seg.text
-                ))
+        audio = AudioFileClip(audio_filepath)
+        duration = audio.duration
         
-        # If text is available at top level
-        full_text = transcription.text if hasattr(transcription, "text") else ""
+        chunk_length = 1500 # 25 minutes
+        num_chunks = math.ceil(duration / chunk_length)
+        
+        all_segments = []
+        full_text = ""
+        
+        for i in range(num_chunks):
+            start_t = i * chunk_length
+            end_t = min((i + 1) * chunk_length, duration)
             
-        print("SUCCESS! Transcription complete in seconds via Groq.")
-        return _MergedTranscript(full_text, all_segments)
+            chunk_path = f"{audio_filepath}_chunk_{i}.mp3"
+            if num_chunks > 1:
+                print(f"Audio exceeds 25m. Chunking: processing part {i+1} of {num_chunks}...")
+                chunk_clip = audio.subclip(start_t, end_t)
+                chunk_clip.write_audiofile(chunk_path, bitrate="64k", logger=None)
+                target_file = chunk_path
+            else:
+                target_file = audio_filepath
+
+            with open(target_file, "rb") as file:
+                transcription = client.audio.transcriptions.create(
+                  file=(os.path.basename(target_file), file.read()),
+                  model="whisper-large-v3",
+                  response_format="verbose_json"
+                )
+                
+            if hasattr(transcription, "segments"):
+                for seg in transcription.segments:
+                    seg_start = (seg.get("start") if isinstance(seg, dict) else seg.start) + start_t
+                    seg_end = (seg.get("end") if isinstance(seg, dict) else seg.end) + start_t
+                    seg_text = seg.get("text") if isinstance(seg, dict) else seg.text
+                    all_segments.append(_Segment(start=seg_start, end=seg_end, text=seg_text))
+            
+            if hasattr(transcription, "text"):
+                full_text += transcription.text + " "
+                
+            # Cleanup chunk
+            if num_chunks > 1 and os.path.exists(chunk_path):
+                try:
+                    os.remove(chunk_path)
+                except:
+                    pass
+                    
+        audio.close()
+            
+        print("SUCCESS! Transcription complete via Groq.")
+        return _MergedTranscript(full_text.strip(), all_segments)
         
     except Exception as e:
         print(f"\nCRITICAL ERROR during Groq transcription: {e}")
