@@ -1,0 +1,11 @@
+openai
+groq
+boto3
+yt-dlp
+moviepy
+opencv-python
+mediapipe
+Pillow
+numpy
+customtkinter
+python-dotenv

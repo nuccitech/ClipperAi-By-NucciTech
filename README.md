@@ -18,3 +18,39 @@ An end-to-end AI-powered viral short-form video clipping engine.
 - `dashboard/`: Web UI for monitoring clips.
 
 *Note: Data, caches, and secret keys are stripped from this public repository.*
+
+## Getting Started
+
+**1. Clone and install dependencies**
+```bash
+git clone https://github.com/nuccitech/clipperai-by-nuccitech.git
+cd clipperai-by-nuccitech
+pip install -r requirements.txt
+```
+
+**2. Configure environment variables**
+```bash
+cp .env.example .env
+# Fill in your API keys in .env
+```
+
+**3. Run the pipeline**
+```bash
+# From a YouTube URL
+python main.py "https://www.youtube.com/watch?v=YOUR_VIDEO_ID" --profile SampleCreator --platform tiktok
+
+# From a local file
+python main.py /path/to/video.mp4 --profile SampleCreator --platform reels
+```
+
+**4. (Optional) Launch the web dashboard**
+```bash
+python server.py
+# Open dashboard/index.html in your browser
+```
+
+Clips are exported to `output/<profile_name>/`. A report and full transcript are saved alongside each batch.
+
+## Creator Profiles
+
+Profiles live in `profiles/` as JSON files and control clip style, duration, caption font, and the AI's analysis persona. See `profiles/SampleCreator.json` for a reference template.
